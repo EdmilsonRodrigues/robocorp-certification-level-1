@@ -15,8 +15,7 @@ def robot_spare_bin_python():
     open_the_intranet_website()
     log_in()
     download_excel_file()
-    validate_data()
-    fill_form_with_excel_file()
+    fill_form_with_excel_data()
     collect_results()
     export_as_pdf()
     log_out()
@@ -41,27 +40,61 @@ def download_excel_file():
     http.download(url="https://robotsparebinindustries.com/SalesData.xlsx", overwrite=True)
 
 
-def validate_data():
+def validate_data(sales_rep):
     """Validate the data from the excel file"""
-    
+    if sales_rep["First Name"] and sales_rep["Last Name"] and int(sales_rep["Sales Target"]) % 5000 == 0:
+        return sales_rep
+    else:
+        print(sales_rep["First Name"])
+        print(sales_rep["Last Name"])
+        print(sales_rep["Sales Target"])
+        return False
 
 
-def fill_form_with_excel_file():
+def fill_and_submit_sales_form(sales_rep):
     """Fills in the sales data and click the 'Submit' button"""
-    pass
+    page = browser.page()
+
+    sales_rep = validate_data(sales_rep)
+    if not sales_rep:
+        print("Row not filled.")
+    else:
+        page.fill("#firstname", sales_rep["First Name"])
+        page.fill("#lastname", sales_rep["Last Name"])
+        page.fill("#salesresult", str(sales_rep["Sales"]))
+        page.select_option("#salestarget", str(sales_rep["Sales Target"]))
+        page.click("text=Submit")
+
+
+def fill_form_with_excel_data():
+    """Read data from excel and fill in the sales form"""
+    excel = Files()
+    excel.open_workbook("SalesData.xlsx")
+    worksheet = excel.read_worksheet_as_table("data", header=True)
+    excel.close_workbook()
+
+    for row in worksheet:
+        fill_and_submit_sales_form(row)
 
 
 def collect_results():
     """Take a screenshot of the page"""
-    pass
+    page = browser.page()
+    page.screenshot(path="output/sales_summary.png")
+    
 
 
 def export_as_pdf():
     """Export the data to a pdf file"""
-    pass
+    page = browser.page()
+    sales_result_html = page.locator("#sales-results").inner_html()
+
+    pdf = PDF()
+    pdf.html_to_pdf(sales_result_html, "output/sales_results.pdf")
 
 
 def log_out():
     """Pressures the 'Log out' button"""
-    pass
+    page = browser.page()
+    page.click("text=Log out")
 
